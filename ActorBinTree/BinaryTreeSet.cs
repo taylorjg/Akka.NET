@@ -17,6 +17,8 @@ namespace ActorBinTree
 
         private void Normal()
         {
+            Console.WriteLine("BinaryTreeSet Normal");
+
             Receive<BinaryTreeSetMessages.Operation>(op => _root.Forward(op));
 
             Receive<BinaryTreeSetMessages.Gc>(_ =>
@@ -29,18 +31,34 @@ namespace ActorBinTree
 
         private Action GarbageCollecting(IActorRef newRoot)
         {
+            Console.WriteLine("BinaryTreeSet GarbageCollecting");
+
             return () =>
             {
-                Receive<BinaryTreeSetMessages.Operation>(op => _pendingQueue.Enqueue(op));
+                Console.WriteLine("BinaryTreeSet GarbageCollecting action");
 
-                Receive<BinaryTreeSetMessages.Gc>(_ =>
+                SetReceiveTimeout(TimeSpan.FromSeconds(5));
+
+                Receive<BinaryTreeSetMessages.Operation>(op =>
                 {
+                    Console.WriteLine($"Enqueuing operation whilst garbage collecting: {op.Id}");
+                    _pendingQueue.Enqueue(op);
                 });
 
-                Receive<BinaryTreeNodeMessages.CopyFinished>(_ =>
+                Receive<BinaryTreeSetMessages.Gc>(_ => {});
+
+                //Receive<BinaryTreeNodeMessages.CopyFinished>(_ =>
+                //{
+                //    _root.Tell(PoisonPill.Instance);
+                //    _root = newRoot;
+                //    _pendingQueue.ForEach(_root.Tell);
+                //    _pendingQueue.Clear();
+                //    Become(Normal);
+                //});
+
+                Receive<ReceiveTimeout>(_ =>
                 {
-                    _root.Tell(PoisonPill.Instance);
-                    _root = newRoot;
+                    SetReceiveTimeout(null);
                     _pendingQueue.ForEach(_root.Tell);
                     _pendingQueue.Clear();
                     Become(Normal);

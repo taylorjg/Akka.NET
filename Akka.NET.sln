@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ActorBinTree", "ActorBinTre
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ActorBinTreeTests", "ActorBinTreeTests\ActorBinTreeTests.csproj", "{F293FD6E-D082-4D86-9E8D-353E8EF6CB37}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ActorBinTreeApp", "ActorBinTreeApp\ActorBinTreeApp.csproj", "{A9CD510A-F206-4F1F-A7D6-575669CBAFBD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{F293FD6E-D082-4D86-9E8D-353E8EF6CB37}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F293FD6E-D082-4D86-9E8D-353E8EF6CB37}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F293FD6E-D082-4D86-9E8D-353E8EF6CB37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9CD510A-F206-4F1F-A7D6-575669CBAFBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9CD510A-F206-4F1F-A7D6-575669CBAFBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9CD510A-F206-4F1F-A7D6-575669CBAFBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9CD510A-F206-4F1F-A7D6-575669CBAFBD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -36,5 +42,6 @@ Global
 		{55855764-E9AD-4BA8-BB2B-0CF3E135111B} = {49DB8D3D-9621-4B29-87B2-2FAD33635866}
 		{3A41306D-4CA4-4FF3-A967-666E83D2955E} = {BDBA0D87-A491-46C7-A31C-7E8BE7CA4ECB}
 		{F293FD6E-D082-4D86-9E8D-353E8EF6CB37} = {BDBA0D87-A491-46C7-A31C-7E8BE7CA4ECB}
+		{A9CD510A-F206-4F1F-A7D6-575669CBAFBD} = {BDBA0D87-A491-46C7-A31C-7E8BE7CA4ECB}
 	EndGlobalSection
 EndGlobal

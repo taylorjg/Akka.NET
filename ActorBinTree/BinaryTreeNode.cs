@@ -10,7 +10,8 @@ namespace ActorBinTree
         private bool _removed;
         private readonly Dictionary<Position, IActorRef> _subtrees = new Dictionary<Position, IActorRef>();
 
-        private BinaryTreeNode(int elem, bool initiallyRemoved)
+        // ReSharper disable once MemberCanBePrivate.Global
+        public BinaryTreeNode(int elem, bool initiallyRemoved)
         {
             _elem = elem;
             _removed = initiallyRemoved;
