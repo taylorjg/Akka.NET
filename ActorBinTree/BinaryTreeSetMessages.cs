@@ -2,50 +2,30 @@
 
 namespace ActorBinTree
 {
-    public class BinaryTreeSetMessages
+    public static class BinaryTreeSetMessages
     {
         public abstract class Operation
         {
-            private readonly IActorRef _requester;
-            private readonly int _id;
-            private readonly int _elem;
-
-            public Operation(IActorRef requester, int id, int elem)
+            protected Operation(IActorRef requester, int id, int elem)
             {
-                _requester = requester;
-                _id = id;
-                _elem = elem;
+                Requester = requester;
+                Id = id;
+                Elem = elem;
             }
 
-            public IActorRef Requester
-            {
-                get { return _requester; }
-            }
-
-            public int Id
-            {
-                get { return _id; }
-            }
-
-            public int Elem
-            {
-                get { return _elem; }
-            }
+            public IActorRef Requester { get; }
+            public int Id { get; }
+            public int Elem { get; }
         }
 
         public abstract class OperationReply
         {
-            private readonly int _id;
-
-            public OperationReply(int id)
+            protected OperationReply(int id)
             {
-                _id = id;
+                Id = id;
             }
 
-            public int Id
-            {
-                get { return _id; }
-            }
+            public int Id { get; }
         }
 
         public class Insert : Operation
@@ -75,24 +55,12 @@ namespace ActorBinTree
 
         public class ContainsResult : OperationReply
         {
-            private readonly int _id;
-            private readonly bool _result;
-
             public ContainsResult(int id, bool result) : base(id)
             {
-                _id = id;
-                _result = result;
+                Result = result;
             }
 
-            public int Id
-            {
-                get { return _id; }
-            }
-
-            public bool Result
-            {
-                get { return _result; }
-            }
+            public bool Result { get; }
         }
 
         public class OperationFinished : OperationReply

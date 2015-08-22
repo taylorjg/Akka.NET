@@ -2,21 +2,16 @@
 
 namespace ActorBinTree
 {
-    internal class BinaryTreeNodeMessages
+    internal static class BinaryTreeNodeMessages
     {
         public class CopyTo
         {
-            private readonly IActorRef _treeNode;
-
             public CopyTo(IActorRef treeNode)
             {
-                _treeNode = treeNode;
+                TreeNode = treeNode;
             }
 
-            public IActorRef TreeNode
-            {
-                get { return _treeNode; }
-            }
+            public IActorRef TreeNode { get; }
         }
 
         public class CopyFinished

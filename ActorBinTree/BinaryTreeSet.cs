@@ -29,11 +29,13 @@ namespace ActorBinTree
 
         private Action GarbageCollecting(IActorRef newRoot)
         {
-            return (() =>
+            return () =>
             {
                 Receive<BinaryTreeSetMessages.Operation>(op => _pendingQueue.Enqueue(op));
 
-                Receive<BinaryTreeSetMessages.Gc>(_ => { });
+                Receive<BinaryTreeSetMessages.Gc>(_ =>
+                {
+                });
 
                 Receive<BinaryTreeNodeMessages.CopyFinished>(_ =>
                 {
@@ -43,7 +45,7 @@ namespace ActorBinTree
                     _pendingQueue.Clear();
                     Become(Normal);
                 });
-            });
+            };
         }
 
         private static IActorRef CreateRoot()
