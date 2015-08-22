@@ -22,7 +22,6 @@ namespace ActorBinTree
             T op,
             bool createMissingNodes,
             Action<T> onElemEqual,
-            Action<T, Position> onElemNotEqual,
             Action<T> onOperationFinished)
             where T: BinaryTreeSetMessages.Operation
         {
@@ -33,10 +32,10 @@ namespace ActorBinTree
                 return;
             }
 
-            if (op.Elem < _elem)
+            Action<Position> handleSubtrees = position =>
             {
                 IActorRef n;
-                switch (_subtrees.TryGetValue(Position.Left, out n))
+                switch (_subtrees.TryGetValue(position, out n))
                 {
                     case true:
                         n.Tell(op);
@@ -44,33 +43,15 @@ namespace ActorBinTree
                     default:
                         if (createMissingNodes)
                         {
-                            n = Context.ActorOf(Props(op.Elem, false), "Left");
-                            _subtrees[Position.Left] = n;
+                            n = Context.ActorOf(Props(op.Elem, false), position.ToString());
+                            _subtrees[position] = n;
                         }
-                        onElemNotEqual(op, Position.Left);
                         onOperationFinished(op);
                         break;
                 }
-            }
-            else
-            {
-                IActorRef n;
-                switch (_subtrees.TryGetValue(Position.Right, out n))
-                {
-                    case true:
-                        n.Tell(op);
-                        return;
-                    default:
-                        if (createMissingNodes)
-                        {
-                            n = Context.ActorOf(Props(op.Elem, false), "Right");
-                            _subtrees[Position.Right] = n;
-                        }
-                        onElemNotEqual(op, Position.Right);
-                        onOperationFinished(op);
-                        break;
-                }
-            }
+            };
+
+            handleSubtrees(op.Elem < _elem ? Position.Left : Position.Right);
         }
 
         private void Normal()
@@ -81,18 +62,17 @@ namespace ActorBinTree
                     op,
                     true,
                     _ => _removed = false,
-                    (_, __) => { },
                     _ => op.Requester.Tell(new BinaryTreeSetMessages.OperationFinished(op.Id)));
             });
 
             Receive<BinaryTreeSetMessages.Contains>(op =>
             {
+                var result = false;
                 HandleOperation(
                     op,
                     false,
-                    _ => op.Requester.Tell(new BinaryTreeSetMessages.ContainsResult(op.Id, !_removed)),
-                    (_, __) => op.Requester.Tell(new BinaryTreeSetMessages.ContainsResult(op.Id, false)),
-                    _ => { });
+                    _ => result = !_removed,
+                    _ => op.Requester.Tell(new BinaryTreeSetMessages.ContainsResult(op.Id, result)));
             });
 
             Receive<BinaryTreeSetMessages.Remove>(op =>
@@ -101,7 +81,6 @@ namespace ActorBinTree
                     op,
                     false,
                     _ => _removed = true,
-                    (_, __) => { },
                     _ => op.Requester.Tell(new BinaryTreeSetMessages.OperationFinished(op.Id)));
             });
 
