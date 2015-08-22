@@ -18,120 +18,91 @@ namespace ActorBinTree
             Become(Normal);
         }
 
+        private void HandleOperation<T>(
+            T op,
+            bool createMissingNodes,
+            Action<T> onElemEqual,
+            Action<T, Position> onElemNotEqual,
+            Action<T> onOperationFinished)
+            where T: BinaryTreeSetMessages.Operation
+        {
+            if (op.Elem == _elem)
+            {
+                onElemEqual(op);
+                onOperationFinished(op);
+                return;
+            }
+
+            if (op.Elem < _elem)
+            {
+                IActorRef n;
+                switch (_subtrees.TryGetValue(Position.Left, out n))
+                {
+                    case true:
+                        n.Tell(op);
+                        return;
+                    default:
+                        if (createMissingNodes)
+                        {
+                            n = Context.ActorOf(Props(op.Elem, false), "Left");
+                            _subtrees[Position.Left] = n;
+                        }
+                        onElemNotEqual(op, Position.Left);
+                        onOperationFinished(op);
+                        break;
+                }
+            }
+            else
+            {
+                IActorRef n;
+                switch (_subtrees.TryGetValue(Position.Right, out n))
+                {
+                    case true:
+                        n.Tell(op);
+                        return;
+                    default:
+                        if (createMissingNodes)
+                        {
+                            n = Context.ActorOf(Props(op.Elem, false), "Right");
+                            _subtrees[Position.Right] = n;
+                        }
+                        onElemNotEqual(op, Position.Right);
+                        onOperationFinished(op);
+                        break;
+                }
+            }
+        }
+
         private void Normal()
         {
             Receive<BinaryTreeSetMessages.Insert>(op =>
             {
-                if (_elem == op.Elem)
-                {
-                    _removed = false;
-                    op.Requester.Tell(new BinaryTreeSetMessages.OperationFinished(op.Id));
-                    return;
-                }
-
-                if (op.Elem < _elem)
-                {
-                    IActorRef n;
-                    switch (_subtrees.TryGetValue(Position.Left, out n))
-                    {
-                        case true:
-                            n.Tell(op);
-                            break;
-                        default:
-                            var a = Context.ActorOf(BinaryTreeNode.Props(op.Elem, false), "Left");
-                            _subtrees[Position.Left] = a;
-                            op.Requester.Tell(new BinaryTreeSetMessages.OperationFinished(op.Id));
-                            break;
-                    }
-                }
-                else
-                {
-                    IActorRef n;
-                    switch (_subtrees.TryGetValue(Position.Right, out n))
-                    {
-                        case true:
-                            n.Tell(op);
-                            break;
-                        default:
-                            var a = Context.ActorOf(BinaryTreeNode.Props(op.Elem, false), "Right");
-                            _subtrees[Position.Right] = a;
-                            op.Requester.Tell(new BinaryTreeSetMessages.OperationFinished(op.Id));
-                            break;
-                    }
-                }
+                HandleOperation(
+                    op,
+                    true,
+                    _ => _removed = false,
+                    (_, __) => { },
+                    _ => op.Requester.Tell(new BinaryTreeSetMessages.OperationFinished(op.Id)));
             });
 
             Receive<BinaryTreeSetMessages.Contains>(op =>
             {
-                if (_elem == op.Elem)
-                {
-                    op.Requester.Tell(new BinaryTreeSetMessages.ContainsResult(op.Id, !_removed));
-                    return;
-                }
-
-                if (op.Elem < _elem)
-                {
-                    IActorRef n;
-                    switch (_subtrees.TryGetValue(Position.Left, out n))
-                    {
-                        case true:
-                            n.Tell(op);
-                            break;
-                        default:
-                            op.Requester.Tell(new BinaryTreeSetMessages.ContainsResult(op.Id, false));
-                            break;
-                    }
-                }
-                else
-                {
-                    IActorRef n;
-                    switch (_subtrees.TryGetValue(Position.Right, out n))
-                    {
-                        case true:
-                            n.Tell(op);
-                            break;
-                        default:
-                            op.Requester.Tell(new BinaryTreeSetMessages.ContainsResult(op.Id, false));
-                            break;
-                    }
-                }
+                HandleOperation(
+                    op,
+                    false,
+                    _ => op.Requester.Tell(new BinaryTreeSetMessages.ContainsResult(op.Id, !_removed)),
+                    (_, __) => op.Requester.Tell(new BinaryTreeSetMessages.ContainsResult(op.Id, false)),
+                    _ => { });
             });
 
             Receive<BinaryTreeSetMessages.Remove>(op =>
             {
-                if (_elem == op.Elem)
-                {
-                    _removed = true;
-                    op.Requester.Tell(new BinaryTreeSetMessages.OperationFinished(op.Id));
-                    return;
-                }
-
-                if (op.Elem < _elem)
-                {
-                    IActorRef n;
-                    switch (_subtrees.TryGetValue(Position.Left, out n))
-                    {
-                        case true:
-                            n.Tell(op);
-                            break;
-                        default:
-                            op.Requester.Tell(new BinaryTreeSetMessages.OperationFinished(op.Id));
-                            break;
-                    }
-                }
-                else
-                {
-                    IActorRef n;
-                    switch (_subtrees.TryGetValue(Position.Right, out n))
-                    {
-                        case true:
-                            n.Tell(op);
-                            break;
-                        default:
-                            op.Requester.Tell(new BinaryTreeSetMessages.OperationFinished(op.Id));
-                            break;
-                    }
-                }
+                HandleOperation(
+                    op,
+                    false,
+                    _ => _removed = true,
+                    (_, __) => { },
+                    _ => op.Requester.Tell(new BinaryTreeSetMessages.OperationFinished(op.Id)));
             });
 
             Receive<BinaryTreeNodeMessages.CopyTo>(msg =>
