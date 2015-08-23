@@ -68,7 +68,7 @@ namespace ActorBinTree
 
         private static IActorRef CreateRoot()
         {
-            return Context.ActorOf(BinaryTreeNode.Props(0, false));
+            return Context.ActorOf(BinaryTreeNode.Props(0, true));
         }
     }
 }
