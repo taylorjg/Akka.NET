@@ -103,6 +103,7 @@ namespace ActorBinTree
 
         private Action Copying(List<IActorRef> expected, bool insertConfirmed)
         {
+            // ReSharper disable once ImplicitlyCapturedClosure
             Action checkForCopyFinished = () =>
             {
                 if (!expected.Any() && insertConfirmed)

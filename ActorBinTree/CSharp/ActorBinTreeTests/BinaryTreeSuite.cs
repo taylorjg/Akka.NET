@@ -29,7 +29,7 @@ namespace ActorBinTreeTests
         [Test]
         public void ProperInsertsAndLookups()
         {
-            var topNode = Sys.ActorOf(Props.Create<BinaryTreeSet>());
+            var topNode = Sys.ActorOf(Props.Create<BinaryTreeSet>(), "BinaryTreeSet");
 
             topNode.Tell(new BinaryTreeSetMessages.Contains(TestActor, 1, 1));
             ExpectMsg(new BinaryTreeSetMessages.ContainsResult(1, false), ContainsResultComparerMethod);
@@ -132,7 +132,7 @@ namespace ActorBinTreeTests
             var ops = randomOperations(requesterRef, 100);
             var expectedReplies = referenceReplies(ops);
 
-            var topNode = Sys.ActorOf(Props.Create<BinaryTreeSet>());
+            var topNode = Sys.ActorOf(Props.Create<BinaryTreeSet>(), "BinaryTreeSet");
             ops.ForEach(op =>
             {
                 topNode.Tell(op);
@@ -163,7 +163,7 @@ namespace ActorBinTreeTests
             List<BinaryTreeSetMessages.Operation> ops,
             List<BinaryTreeSetMessages.OperationReply> expectedReplies)
         {
-            var topNode = Sys.ActorOf(Props.Create<BinaryTreeSet>());
+            var topNode = Sys.ActorOf(Props.Create<BinaryTreeSet>(), "BinaryTreeSet");
             ops.ForEach(topNode.Tell);
             ReceiveN(probe, ops, expectedReplies);
         }
