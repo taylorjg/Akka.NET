@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Akka.Actor;
+using Akka.Event;
 using Akka.Util.Internal;
 
 namespace ActorBinTree
@@ -9,6 +10,7 @@ namespace ActorBinTree
     {
         private IActorRef _root = CreateRoot();
         private readonly Queue<BinaryTreeSetMessages.Operation> _pendingQueue = new Queue<BinaryTreeSetMessages.Operation>();
+        private readonly ILoggingAdapter _loggingAdapter = Context.GetLogger();
 
         public BinaryTreeSet()
         {
@@ -17,9 +19,13 @@ namespace ActorBinTree
 
         private void Normal()
         {
-            Console.WriteLine("BinaryTreeSet Normal");
+            _loggingAdapter.Info("Becoming Normal");
 
-            Receive<BinaryTreeSetMessages.Operation>(op => _root.Forward(op));
+            Receive<BinaryTreeSetMessages.Operation>(op =>
+            {
+                _loggingAdapter.Info($"Forwarding operation: {op.Id}");
+                _root.Forward(op);
+            });
 
             Receive<BinaryTreeSetMessages.Gc>(_ =>
             {
@@ -31,34 +37,27 @@ namespace ActorBinTree
 
         private Action GarbageCollecting(IActorRef newRoot)
         {
-            Console.WriteLine("BinaryTreeSet GarbageCollecting");
+            _loggingAdapter.Info("Becoming GarbageCollecting");
 
             return () =>
             {
-                Console.WriteLine("BinaryTreeSet GarbageCollecting action");
+                _loggingAdapter.Info("Inside GarbageCollecting become action method");
 
                 SetReceiveTimeout(TimeSpan.FromSeconds(5));
 
                 Receive<BinaryTreeSetMessages.Operation>(op =>
                 {
-                    Console.WriteLine($"Enqueuing operation whilst garbage collecting: {op.Id}");
+                    _loggingAdapter.Info($"Enqueuing operation whilst garbage collecting: {op.Id}");
                     _pendingQueue.Enqueue(op);
                 });
 
-                Receive<BinaryTreeSetMessages.Gc>(_ => {});
+                Receive<BinaryTreeSetMessages.Gc>(_ => { /* ignore message */ });
 
-                //Receive<BinaryTreeNodeMessages.CopyFinished>(_ =>
-                //{
-                //    _root.Tell(PoisonPill.Instance);
-                //    _root = newRoot;
-                //    _pendingQueue.ForEach(_root.Tell);
-                //    _pendingQueue.Clear();
-                //    Become(Normal);
-                //});
-
-                Receive<ReceiveTimeout>(_ =>
+                Receive<BinaryTreeNodeMessages.CopyFinished>(_ =>
                 {
-                    SetReceiveTimeout(null);
+                    _loggingAdapter.Info("Received CopyFinished");
+                    _root.Tell(PoisonPill.Instance);
+                    _root = newRoot;
                     _pendingQueue.ForEach(_root.Tell);
                     _pendingQueue.Clear();
                     Become(Normal);
@@ -66,9 +65,11 @@ namespace ActorBinTree
             };
         }
 
+        private static int _rootNumber = 1;
+
         private static IActorRef CreateRoot()
         {
-            return Context.ActorOf(BinaryTreeNode.Props(0, true));
+            return Context.ActorOf(BinaryTreeNode.Props(0, true), $"Root{_rootNumber++}");
         }
     }
 }

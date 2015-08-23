@@ -14,6 +14,7 @@ namespace ActorBinTreeTests
     {
         private const string ConfigString = @"
             akka {
+              loglevel = INFO
               test {
                 testkit {
                   debug = true
@@ -67,6 +68,31 @@ namespace ActorBinTreeTests
             };
 
             Verify(requester, ops, expectedReplies);
+        }
+
+        [Test]
+        public void GcTest()
+        {
+            Within(TimeSpan.FromSeconds(5), () =>
+            {
+                var topNode = Sys.ActorOf(Props.Create<BinaryTreeSet>());
+                topNode.Tell(new BinaryTreeSetMessages.Insert(TestActor, 1, 1));
+                topNode.Tell(new BinaryTreeSetMessages.Insert(TestActor, 2, 2));
+                topNode.Tell(new BinaryTreeSetMessages.Insert(TestActor, 3, 3));
+                ExpectMsg(new BinaryTreeSetMessages.OperationFinished(1), OperationFinishedComparerMethod);
+                ExpectMsg(new BinaryTreeSetMessages.OperationFinished(2), OperationFinishedComparerMethod);
+                ExpectMsg(new BinaryTreeSetMessages.OperationFinished(3), OperationFinishedComparerMethod);
+                topNode.Tell(new BinaryTreeSetMessages.Gc());
+                topNode.Tell(new BinaryTreeSetMessages.Insert(TestActor, 4, 4));
+                topNode.Tell(new BinaryTreeSetMessages.Insert(TestActor, 5, 5));
+                System.Threading.Thread.Sleep(2000);
+                topNode.Tell(new BinaryTreeSetMessages.Insert(TestActor, 6, 6));
+                topNode.Tell(new BinaryTreeSetMessages.Insert(TestActor, 7, 7));
+                ExpectMsg(new BinaryTreeSetMessages.OperationFinished(4), OperationFinishedComparerMethod);
+                ExpectMsg(new BinaryTreeSetMessages.OperationFinished(5), OperationFinishedComparerMethod);
+                ExpectMsg(new BinaryTreeSetMessages.OperationFinished(6), OperationFinishedComparerMethod);
+                ExpectMsg(new BinaryTreeSetMessages.OperationFinished(7), OperationFinishedComparerMethod);
+            });
         }
 
         [Test]
@@ -128,10 +154,17 @@ namespace ActorBinTreeTests
             var probe = CreateTestProbe();
             var requesterRef = probe.Ref;
 
-            var ops = randomOperations(requesterRef, 1000);
+            var ops = randomOperations(requesterRef, 100);
             var expectedReplies = referenceReplies(ops);
 
-            Verify(probe, ops, expectedReplies);
+            var topNode = Sys.ActorOf(Props.Create<BinaryTreeSet>());
+            ops.ForEach(op =>
+            {
+                topNode.Tell(op);
+                System.Threading.Thread.Sleep(5);
+                if (rnd.NextDouble() < 0.1) topNode.Tell(new BinaryTreeSetMessages.Gc());
+            });
+            ReceiveN(probe, ops, expectedReplies);
         }
 
         private void ReceiveN(
