@@ -71,31 +71,6 @@ namespace ActorBinTreeTests
         }
 
         [Test]
-        public void GcTest()
-        {
-            Within(TimeSpan.FromSeconds(5), () =>
-            {
-                var topNode = Sys.ActorOf(Props.Create<BinaryTreeSet>());
-                topNode.Tell(new BinaryTreeSetMessages.Insert(TestActor, 1, 1));
-                topNode.Tell(new BinaryTreeSetMessages.Insert(TestActor, 2, 2));
-                topNode.Tell(new BinaryTreeSetMessages.Insert(TestActor, 3, 3));
-                ExpectMsg(new BinaryTreeSetMessages.OperationFinished(1), OperationFinishedComparerMethod);
-                ExpectMsg(new BinaryTreeSetMessages.OperationFinished(2), OperationFinishedComparerMethod);
-                ExpectMsg(new BinaryTreeSetMessages.OperationFinished(3), OperationFinishedComparerMethod);
-                topNode.Tell(new BinaryTreeSetMessages.Gc());
-                topNode.Tell(new BinaryTreeSetMessages.Insert(TestActor, 4, 4));
-                topNode.Tell(new BinaryTreeSetMessages.Insert(TestActor, 5, 5));
-                System.Threading.Thread.Sleep(2000);
-                topNode.Tell(new BinaryTreeSetMessages.Insert(TestActor, 6, 6));
-                topNode.Tell(new BinaryTreeSetMessages.Insert(TestActor, 7, 7));
-                ExpectMsg(new BinaryTreeSetMessages.OperationFinished(4), OperationFinishedComparerMethod);
-                ExpectMsg(new BinaryTreeSetMessages.OperationFinished(5), OperationFinishedComparerMethod);
-                ExpectMsg(new BinaryTreeSetMessages.OperationFinished(6), OperationFinishedComparerMethod);
-                ExpectMsg(new BinaryTreeSetMessages.OperationFinished(7), OperationFinishedComparerMethod);
-            });
-        }
-
-        [Test]
         public void BehaveIdenticallyToBuiltInSet_IncludesGc()
         {
             var rnd = new Random();

@@ -19,8 +19,6 @@ namespace ActorBinTree
 
         private void Normal()
         {
-            _loggingAdapter.Info("Becoming Normal");
-
             Receive<BinaryTreeSetMessages.Operation>(op =>
             {
                 _loggingAdapter.Info($"Forwarding operation: {op.Id}");
@@ -37,12 +35,8 @@ namespace ActorBinTree
 
         private Action GarbageCollecting(IActorRef newRoot)
         {
-            _loggingAdapter.Info("Becoming GarbageCollecting");
-
             return () =>
             {
-                _loggingAdapter.Info("Inside GarbageCollecting become action method");
-
                 SetReceiveTimeout(TimeSpan.FromSeconds(5));
 
                 Receive<BinaryTreeSetMessages.Operation>(op =>
@@ -55,7 +49,7 @@ namespace ActorBinTree
 
                 Receive<BinaryTreeNodeMessages.CopyFinished>(_ =>
                 {
-                    _loggingAdapter.Info("Received CopyFinished");
+                    _loggingAdapter.Info("Received CopyFinished - garbage collection complete");
                     _root.Tell(PoisonPill.Instance);
                     _root = newRoot;
                     _pendingQueue.ForEach(_root.Tell);
