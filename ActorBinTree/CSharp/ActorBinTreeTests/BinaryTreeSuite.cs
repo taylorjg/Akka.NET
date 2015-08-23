@@ -69,6 +69,71 @@ namespace ActorBinTreeTests
             Verify(requester, ops, expectedReplies);
         }
 
+        [Test]
+        public void BehaveIdenticallyToBuiltInSet_IncludesGc()
+        {
+            var rnd = new Random();
+            Func<IActorRef, int, List<BinaryTreeSetMessages.Operation>> randomOperations =
+                (requester, count) =>
+                {
+                    Func<int> randomElement = () => rnd.Next(100);
+                    Func<int, BinaryTreeSetMessages.Operation> randomOperation =
+                        id =>
+                        {
+                            switch (rnd.Next(4))
+                            {
+                                case 0:
+                                case 1:
+                                    return new BinaryTreeSetMessages.Insert(requester, id, randomElement());
+                                case 2:
+                                    return new BinaryTreeSetMessages.Contains(requester, id, randomElement());
+                                default:
+                                    return new BinaryTreeSetMessages.Remove(requester, id, randomElement());
+                            }
+                        };
+                    return Enumerable.Range(0, count).Select(randomOperation).ToList();
+                };
+            Func<IEnumerable<BinaryTreeSetMessages.Operation>, List<BinaryTreeSetMessages.OperationReply>> referenceReplies =
+                operations =>
+                {
+                    var referenceSet = new HashSet<int>();
+                    Func<BinaryTreeSetMessages.Operation, BinaryTreeSetMessages.OperationReply> replyFor =
+                        operation =>
+                        {
+                            var insert = operation as BinaryTreeSetMessages.Insert;
+                            if (insert != null)
+                            {
+                                referenceSet.Add(insert.Elem);
+                                return new BinaryTreeSetMessages.OperationFinished(insert.Id);
+                            }
+
+                            var remove = operation as BinaryTreeSetMessages.Remove;
+                            if (remove != null)
+                            {
+                                referenceSet.Remove(remove.Elem);
+                                return new BinaryTreeSetMessages.OperationFinished(remove.Id);
+                            }
+
+                            var contains = operation as BinaryTreeSetMessages.Contains;
+                            if (contains != null)
+                            {
+                                return new BinaryTreeSetMessages.ContainsResult(contains.Id, referenceSet.Contains(contains.Elem));
+                            }
+
+                            throw new ArgumentException("Unrecognised operation", nameof(operation));
+                        };
+                    return operations.Select(replyFor).ToList();
+                };
+
+            var probe = CreateTestProbe();
+            var requesterRef = probe.Ref;
+
+            var ops = randomOperations(requesterRef, 1000);
+            var expectedReplies = referenceReplies(ops);
+
+            Verify(probe, ops, expectedReplies);
+        }
+
         private void ReceiveN(
             TestProbe probe,
             List<BinaryTreeSetMessages.Operation> ops,
