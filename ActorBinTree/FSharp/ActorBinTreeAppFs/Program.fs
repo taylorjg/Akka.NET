@@ -1,14 +1,20 @@
 ﻿open Akka.Actor
+open Akka.Configuration
 open Akka.FSharp
-open ActorBinTreeFs.BinaryTreeSet
+open ActorBinTree
 
 [<EntryPoint>]
 let main _ = 
 
-    aref <! Insert (aref, 1, 1)
-    aref <! Contains (aref, 1, 1)
-    aref <! Remove (aref, 1, 1)
-    aref <! GC
+    let config = ConfigurationFactory.Default()
+    let system = System.create "ActorBinTree" config
+
+    let a = spawn system "BinaryTreeSet" binaryTreeSet
+
+    a <! Insert (a, 1, 1)
+    a <! Contains (a, 1, 1)
+    a <! Remove (a, 1, 1)
+    a <! GC
 
     System.Threading.Thread.Sleep(500)
 
