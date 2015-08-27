@@ -88,9 +88,11 @@ let binaryTreeSet (mailbox: Actor<Message>) =
         actor {
             let! msg = mailbox.Receive ()
             match msg with
-            | Insert _ -> root.Forward msg
-            | Contains _ -> root.Forward msg
-            | Remove _ -> root.Forward msg
+            | Insert _
+            | Contains _
+            | Remove _ ->
+                mailbox.Log.Value.Info ("Forwarding {0}", msg)
+                root.Forward msg
             | GC ->
                 mailbox.Log.Value.Info "GC in binaryTreeSet"
                 root <! CopyTo root
@@ -103,14 +105,10 @@ let binaryTreeSet (mailbox: Actor<Message>) =
         actor {
             let! msg = mailbox.Receive ()
             match msg with
-            | Insert _ ->
-                mailbox.Log.Value.Info "Enqueuing Insert"
-                return! garbageCollecting (msg::pending) newRoot
-            | Contains _ ->
-                mailbox.Log.Value.Info "Enqueuing Contains"
-                return! garbageCollecting (msg::pending) newRoot
+            | Insert _
+            | Contains _
             | Remove _ ->
-                mailbox.Log.Value.Info "Enqueuing Remove"
+                mailbox.Log.Value.Info ("Enqueuing {0}", msg)
                 return! garbageCollecting (msg::pending) newRoot
             | GC -> mailbox.Log.Value.Info "Ignoring GC whilst already garbage collecting"
             | CopyFinished ->

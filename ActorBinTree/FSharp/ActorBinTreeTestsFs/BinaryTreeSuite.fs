@@ -5,8 +5,8 @@ open Akka.TestKit.NUnit
 open ActorBinTreeFs
 
 [<NUnit.Framework.TestFixture>]
-type BinaryTreeSuiteFs() =
-    inherit TestKit()
+type BinaryTreeSuiteFs () =
+    inherit TestKit ()
 
     [<NUnit.Framework.Test>]
     member this.ProperInsertsAndLookups ()  =
