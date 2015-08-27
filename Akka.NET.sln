@@ -19,6 +19,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ActorBinTreeAppFs", "ActorB
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ActorBinTreeFs", "ActorBinTree\FSharp\ActorBinTreeFs\ActorBinTreeFs.fsproj", "{9ED4EA38-C145-4341-9DB5-C96563652F2D}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ActorBinTreeTestsFs", "ActorBinTree\FSharp\ActorBinTreeTestsFs\ActorBinTreeTestsFs.fsproj", "{D05ECB99-0C53-4289-ACFF-2D50109E2F07}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{9ED4EA38-C145-4341-9DB5-C96563652F2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9ED4EA38-C145-4341-9DB5-C96563652F2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9ED4EA38-C145-4341-9DB5-C96563652F2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D05ECB99-0C53-4289-ACFF-2D50109E2F07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D05ECB99-0C53-4289-ACFF-2D50109E2F07}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D05ECB99-0C53-4289-ACFF-2D50109E2F07}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D05ECB99-0C53-4289-ACFF-2D50109E2F07}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -57,5 +63,6 @@ Global
 		{5A0FD93A-99FD-4612-BE16-187455C779EC} = {49DB8D3D-9621-4B29-87B2-2FAD33635866}
 		{58A4D2A0-7670-461E-B519-F54BBA7A0718} = {5A0FD93A-99FD-4612-BE16-187455C779EC}
 		{9ED4EA38-C145-4341-9DB5-C96563652F2D} = {5A0FD93A-99FD-4612-BE16-187455C779EC}
+		{D05ECB99-0C53-4289-ACFF-2D50109E2F07} = {5A0FD93A-99FD-4612-BE16-187455C779EC}
 	EndGlobalSection
 EndGlobal

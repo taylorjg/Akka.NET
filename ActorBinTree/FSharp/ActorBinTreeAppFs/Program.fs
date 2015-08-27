@@ -1,7 +1,9 @@
-﻿open Akka.Actor
+﻿module ActorBinTreeAppFs
+
+open Akka.Actor
 open Akka.Configuration
 open Akka.FSharp
-open ActorBinTree
+open ActorBinTreeFs
 
 let client (bts: IActorRef) (mailbox: Actor<Message>) =
     let self = mailbox.Context.Self

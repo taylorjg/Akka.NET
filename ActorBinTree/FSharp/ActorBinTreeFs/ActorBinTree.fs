@@ -1,4 +1,4 @@
-﻿module ActorBinTree
+﻿module ActorBinTreeFs
 
 open Akka.Actor
 open Akka.Configuration
