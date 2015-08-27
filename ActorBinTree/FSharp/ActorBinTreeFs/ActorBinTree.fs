@@ -111,26 +111,18 @@ let rec private binaryTreeNode elem removed (mailbox: Actor<Message>) =
             | Contains (r, id, e) ->
                 mailbox.Log.Value.Info("Contains {0}", e)
                 if e = elem
-                    then
-                        r <! ContainsResult (id, not removed)
-                        return! normal elem removed subtrees
-                    else
-                    if e < elem
+                    then r <! ContainsResult (id, not removed)
+                    else if e < elem
                         then
                             match Map.tryFind Left subtrees with
                                 | Some n -> n <! msg
-                                | None ->
-                                    r <! ContainsResult (id, false)
-                                    return! normal elem removed subtrees
+                                | None -> r <! ContainsResult (id, false)
                         else
                             match Map.tryFind Right subtrees with
                                 | Some n -> n <! msg
-                                | None ->
-                                    r <! ContainsResult (id, false)
-                                    return! normal elem removed subtrees
+                                | None -> r <! ContainsResult (id, false)
             | Remove (r, id, e) ->
                 mailbox.Log.Value.Info("Remove {0}", e)
-                return! normal elem removed subtrees
             | CopyTo newRoot ->
                 mailbox.Log.Value.Info "CopyTo"
                 mailbox.Context.Parent <! CopyFinished
