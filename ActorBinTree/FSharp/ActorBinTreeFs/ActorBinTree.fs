@@ -83,53 +83,50 @@ let binaryTreeNode (mailbox: Actor<Message>) =
         actor {
             let! msg = mailbox.Receive ()
             match msg with
-            | Insert (r, id, e) -> printfn "Insert %d" e
-            | Contains (r, id, e) -> printfn "Contains %d" e
-            | Remove (r, id, e) -> printfn "Remove %d" e
-            | _ as m -> printfn "Unexpected message: %A" m
+            | Insert (r, id, e) -> mailbox.Log.Value.Info("Insert {0}", e)
+            | Contains (r, id, e) -> mailbox.Log.Value.Info("Contains {0}", e)
+            | Remove (r, id, e) -> mailbox.Log.Value.Info("Remove {0}", e)
+            | CopyTo newRoot ->
+                mailbox.Log.Value.Info "CopyTo"
+                mailbox.Context.Parent <! CopyFinished
+            | _ as m -> mailbox.Log.Value.Info("Unexpected message: {0}", m)
             return! normal ()
         }
     normal ()
 
 let binaryTreeSet (mailbox: Actor<Message>) =
     let rec normal (root: IActorRef) =
+        mailbox.Log.Value.Info "Becoming normal"
         actor {
             let! msg = mailbox.Receive ()
             match msg with
             | Insert (r, id, e) -> root.Forward msg
             | Contains (r, id, e) -> root.Forward msg
             | Remove (r, id, e) -> root.Forward msg
-            | GC -> printfn "GC"
-            | _ as m -> printfn "Unexpected message: %A" m
+            | GC ->
+                mailbox.Log.Value.Info "GC in binaryTreeSet"
+                root <! CopyTo root
+                return! garbageCollecting [] root
+            | _ as m -> mailbox.Log.Value.Info("Unexpected message: {0}", m)
             return! normal root
         }
     and garbageCollecting (pending: Message list) (newRoot: IActorRef) =
+        mailbox.Log.Value.Info "Becoming garbageCollecting"
         actor {
             let! msg = mailbox.Receive ()
             match msg with
-            | Insert (r, id, e) -> return! garbageCollecting (msg::pending) newRoot
-            | Contains (r, id, e) -> return! garbageCollecting (msg::pending) newRoot
-            | Remove (r, id, e) -> return! garbageCollecting (msg::pending) newRoot
-            | GC -> printfn "Ignoring GC whilst already garbage collecting"
+            | Insert (r, id, e) ->
+                mailbox.Log.Value.Info "Enqueuing Insert"
+                return! garbageCollecting (msg::pending) newRoot
+            | Contains (r, id, e) ->
+                mailbox.Log.Value.Info "Enqueuing Contains"
+                return! garbageCollecting (msg::pending) newRoot
+            | Remove (r, id, e) ->
+                mailbox.Log.Value.Info "Enqueuing Remove"
+                return! garbageCollecting (msg::pending) newRoot
+            | GC -> mailbox.Log.Value.Info "Ignoring GC whilst already garbage collecting"
             | CopyFinished -> return! normal newRoot
-            | _ as m -> printfn "Unexpected message: %A" m
+            | _ as m -> mailbox.Log.Value.Info("Unexpected message: {0}", m)
             return! garbageCollecting pending newRoot
         }
-    normal <| spawn mailbox.Context.System "root" binaryTreeNode
-
-//let binaryTreeSetHandler (mailbox: Actor<Message>) msg = 
-//    match msg with
-//    | Insert (r, id, e) -> r <! msg
-//    | Contains (r, id, e) -> r <! msg
-//    | Remove (r, id, e) -> r <! msg
-//    | GC -> printfn "GC"
-//    | CopyFinished -> printfn "CopyFinished"
-//    | _ as m -> printfn "Unexpected message: %A" m
-//
-//let binaryTreeNodeHandler (mailbox: Actor<Message>) msg = 
-//    match msg with
-//    | Insert (r, id, e) -> printfn "Insert %d" e
-//    | Contains (r, id, e) -> printfn "Contains %d" e
-//    | Remove (r, id, e) -> printfn "Remove %d" e
-//    | CopyTo treeNode -> ()
-//    | _ as m -> printfn "Unexpected message: %A" m
+    normal <| spawn mailbox "root" binaryTreeNode

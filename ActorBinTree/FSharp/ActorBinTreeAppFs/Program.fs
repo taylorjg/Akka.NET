@@ -9,12 +9,15 @@ let main _ =
     let config = ConfigurationFactory.Default()
     let system = System.create "ActorBinTree" config
 
-    let a = spawn system "BinaryTreeSet" binaryTreeSet
+    let bts = spawn system "BinaryTreeSet" binaryTreeSet
 
-    a <! Insert (a, 1, 1)
-    a <! Contains (a, 1, 1)
-    a <! Remove (a, 1, 1)
-    a <! GC
+    bts <! Insert (bts, 1, 1)
+    bts <! Contains (bts, 2, 1)
+    bts <! Remove (bts, 3, 1)
+    bts <! GC
+    bts <! Insert (bts, 4, 2)
+    bts <! Insert (bts, 5, 3)
+    bts <! Insert (bts, 6, 4)
 
     System.Threading.Thread.Sleep(500)
 
