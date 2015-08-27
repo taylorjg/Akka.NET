@@ -11,13 +11,14 @@ let main _ =
 
     let bts = spawn system "BinaryTreeSet" binaryTreeSet
 
-    bts <! Insert (bts, 1, 1)
-    bts <! Contains (bts, 2, 1)
-    bts <! Remove (bts, 3, 1)
+    bts <! Insert (bts, 1, 20)
+    bts <! Contains (bts, 2, 20)
+    bts <! Remove (bts, 3, 0)
     bts <! GC
-    bts <! Insert (bts, 4, 2)
-    bts <! Insert (bts, 5, 3)
-    bts <! Insert (bts, 6, 4)
+    bts <! Insert (bts, 4, 10)
+    bts <! Insert (bts, 5, 30)
+    bts <! Insert (bts, 6, 5)
+    bts <! Insert (bts, 7, 40)
 
     System.Threading.Thread.Sleep(500)
 

@@ -4,9 +4,6 @@ open Akka.Actor
 open Akka.Configuration
 open Akka.FSharp
 
-let config = ConfigurationFactory.Default()
-let system = System.create "my-system" config
-
 type Message =
     | Insert of IActorRef * int * int
     | Contains of IActorRef * int * int
@@ -16,6 +13,10 @@ type Message =
     | OperationFinished of int
     | CopyTo of IActorRef
     | CopyFinished
+
+type private Position =
+    | Left
+    |Right
 
 // type Actor<'Message> =
 //    inherit Akka.Actor.IActorRefFactory
@@ -78,21 +79,65 @@ type Message =
 //
 // val actorOf2 : fn:(Actor<'Message> -> 'Message -> unit) -> mailbox:Actor<'Message> -> Cont<'Message,'Returned>
 
-let binaryTreeNode (mailbox: Actor<Message>) =
-    let rec normal () =
+let rec private binaryTreeNode elem removed (mailbox: Actor<Message>) =
+    let rec normal elem removed (subtrees: Map<Position, IActorRef>) =
         actor {
             let! msg = mailbox.Receive ()
             match msg with
-            | Insert (r, id, e) -> mailbox.Log.Value.Info("Insert {0}", e)
-            | Contains (r, id, e) -> mailbox.Log.Value.Info("Contains {0}", e)
-            | Remove (r, id, e) -> mailbox.Log.Value.Info("Remove {0}", e)
+            | Insert (r, id, e) ->
+                mailbox.Log.Value.Info("Insert {0}", e)
+                if e = elem
+                    then
+                        r <! OperationFinished id
+                        return! normal elem false subtrees
+                    else
+                        if e < elem
+                            then
+                                match Map.tryFind Left subtrees with
+                                    | Some n -> n <! msg
+                                    | None ->
+                                        let n = spawn mailbox "Left" (binaryTreeNode e false)
+                                        let subtrees' = Map.add Left n subtrees
+                                        r <! OperationFinished id
+                                        return! normal elem removed subtrees'
+                            else
+                                match Map.tryFind Right subtrees with
+                                    | Some n -> n <! msg
+                                    | None ->
+                                        let n = spawn mailbox "Right" (binaryTreeNode e false)
+                                        let subtrees' = Map.add Right n subtrees
+                                        r <! OperationFinished id
+                                        return! normal elem removed subtrees'
+            | Contains (r, id, e) ->
+                mailbox.Log.Value.Info("Contains {0}", e)
+                if e = elem
+                    then
+                        r <! ContainsResult (id, not removed)
+                        return! normal elem removed subtrees
+                    else
+                    if e < elem
+                        then
+                            match Map.tryFind Left subtrees with
+                                | Some n -> n <! msg
+                                | None ->
+                                    r <! ContainsResult (id, false)
+                                    return! normal elem removed subtrees
+                        else
+                            match Map.tryFind Right subtrees with
+                                | Some n -> n <! msg
+                                | None ->
+                                    r <! ContainsResult (id, false)
+                                    return! normal elem removed subtrees
+            | Remove (r, id, e) ->
+                mailbox.Log.Value.Info("Remove {0}", e)
+                return! normal elem removed subtrees
             | CopyTo newRoot ->
                 mailbox.Log.Value.Info "CopyTo"
                 mailbox.Context.Parent <! CopyFinished
             | _ as m -> mailbox.Log.Value.Info("Unexpected message: {0}", m)
-            return! normal ()
+            return! normal elem removed subtrees
         }
-    normal ()
+    normal elem removed Map.empty
 
 let binaryTreeSet (mailbox: Actor<Message>) =
     let rec normal (root: IActorRef) =
@@ -100,9 +145,9 @@ let binaryTreeSet (mailbox: Actor<Message>) =
         actor {
             let! msg = mailbox.Receive ()
             match msg with
-            | Insert (r, id, e) -> root.Forward msg
-            | Contains (r, id, e) -> root.Forward msg
-            | Remove (r, id, e) -> root.Forward msg
+            | Insert _ -> root.Forward msg
+            | Contains _ -> root.Forward msg
+            | Remove _ -> root.Forward msg
             | GC ->
                 mailbox.Log.Value.Info "GC in binaryTreeSet"
                 root <! CopyTo root
@@ -115,18 +160,20 @@ let binaryTreeSet (mailbox: Actor<Message>) =
         actor {
             let! msg = mailbox.Receive ()
             match msg with
-            | Insert (r, id, e) ->
+            | Insert _ ->
                 mailbox.Log.Value.Info "Enqueuing Insert"
                 return! garbageCollecting (msg::pending) newRoot
-            | Contains (r, id, e) ->
+            | Contains _ ->
                 mailbox.Log.Value.Info "Enqueuing Contains"
                 return! garbageCollecting (msg::pending) newRoot
-            | Remove (r, id, e) ->
+            | Remove _ ->
                 mailbox.Log.Value.Info "Enqueuing Remove"
                 return! garbageCollecting (msg::pending) newRoot
             | GC -> mailbox.Log.Value.Info "Ignoring GC whilst already garbage collecting"
-            | CopyFinished -> return! normal newRoot
+            | CopyFinished ->
+                (List.map (fun msg -> newRoot <! msg) <| List.rev pending) |> ignore
+                return! normal newRoot
             | _ as m -> mailbox.Log.Value.Info("Unexpected message: {0}", m)
             return! garbageCollecting pending newRoot
         }
-    normal <| spawn mailbox "root" binaryTreeNode
+    normal <| spawn mailbox "root" (binaryTreeNode 0 true)
