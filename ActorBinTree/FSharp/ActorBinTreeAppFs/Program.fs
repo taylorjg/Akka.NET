@@ -5,7 +5,7 @@ open Akka.Configuration
 open Akka.FSharp
 open ActorBinTreeFs
 
-let client (bts: IActorRef) (mailbox: Actor<Message>) =
+let client (bts: IActorRef) (mailbox: Actor<OperationReply>) =
     let self = mailbox.Context.Self
     bts <! Contains (self, 1, 20)
     bts <! Insert (self, 2, 20)
@@ -23,7 +23,6 @@ let client (bts: IActorRef) (mailbox: Actor<Message>) =
             match msg with
             | OperationFinished id -> mailbox.Log.Value.Info("OperationFinished {0}", id)
             | ContainsResult (id, result) -> mailbox.Log.Value.Info("ContainsResult {0} {1}", id, result)
-            | _ as m -> mailbox.Log.Value.Info("Unexpected message: {0}", m)
             return! loop ()
         }
     loop ()
