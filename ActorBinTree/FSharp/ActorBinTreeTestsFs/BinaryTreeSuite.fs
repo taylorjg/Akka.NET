@@ -1,5 +1,6 @@
 ﻿module ActorBinTreeTestsFs
 
+open Akka.Actor
 open Akka.FSharp
 open Akka.TestKit.NUnit
 open ActorBinTreeFs
@@ -10,7 +11,7 @@ type BinaryTreeSuiteFs () =
     inherit TestKit ()
 
     [<NUnit.Framework.Test>]
-    member this.ProperInsertsAndLookups ()  =
+    member this.ProperInsertsAndLookups () =
         let topNode = spawn this.Sys "BinaryTreeSet" binaryTreeSet
 
         topNode <! Contains (this.TestActor, 1, 1)
@@ -23,7 +24,7 @@ type BinaryTreeSuiteFs () =
         this.ExpectMsg (ContainsResult (3, true)) |> ignore
 
     [<NUnit.Framework.Test>]
-    member this.InstructionExample ()  =
+    member this.InstructionExample () =
         let probe = this.CreateTestProbe ()
         let requesterRef = probe.Ref
 
@@ -46,6 +47,41 @@ type BinaryTreeSuiteFs () =
         ]
 
         this.Verify probe ops expectedReplies
+
+    [<NUnit.Framework.Test>]
+    member this.BehaveIdenticallyToBuiltInSet_IncludesGc () =
+        let rnd = new Random ()
+        let randomOperations requester count =
+            let randomElement = rnd.Next 100
+            let randomOperation id =
+                match rnd.Next 4 with
+                | 2 -> Contains (requester, id, randomElement)
+                | 3 -> Remove (requester, id, randomElement)
+                | _ -> Insert (requester, id, randomElement)
+            seq { 0..count-1 } |> Seq.map randomOperation 
+        let referenceReplies operations: seq<OperationReply> =
+            let mutable referenceSet: Set<int> = Set.empty
+            let replyFor op =
+                match op with
+                | Insert (_, id, elem) ->
+                    referenceSet <- Set.add elem referenceSet
+                    OperationFinished id
+                | Remove (_, id, elem) ->
+                    referenceSet <- Set.remove elem referenceSet
+                    OperationFinished id
+                | Contains (_, id, elem) ->
+                    ContainsResult (id, Set.contains elem referenceSet)
+            Seq.map replyFor operations
+
+        let probe = this.CreateTestProbe ()
+        let topNode = spawn this.Sys "BinaryTreeSet" binaryTreeSet
+        let count = 10
+
+        let ops = randomOperations probe.Ref count |> Seq.toList
+        let expectedReplies = referenceReplies ops |> Seq.toList
+
+        Seq.map (fun op -> topNode <! op) ops |> ignore
+        this.CheckExpectedReplies probe ops expectedReplies
 
     member private this.Verify probe ops expectedReplies =
         let topNode = spawn this.Sys "BinaryTreeSet" binaryTreeSet
