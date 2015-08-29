@@ -31,63 +31,54 @@ let rec private binaryTreeNode elem removed (mailbox: Actor<obj>) =
             match msg with
             | :? Operation as op ->
                 match op with
+
                 | Insert (r, id, e) ->
                     mailbox.Log.Value.Info("Insert {0}", e)
-                    if e = elem
-                        then
+                    let followSubtree pos =
+                        match Map.tryFind pos subtrees with
+                        | Some node -> node <! msg; normal elem removed subtrees
+                        | None ->
                             r <! OperationFinished id
-                            return! normal elem false subtrees
-                        else if e < elem
-                            then
-                                match Map.tryFind Left subtrees with
-                                    | Some n -> n <! msg
-                                    | None ->
-                                        let n = spawn mailbox "Left" (binaryTreeNode e false)
-                                        let subtrees' = Map.add Left n subtrees
-                                        r <! OperationFinished id
-                                        return! normal elem removed subtrees'
-                            else
-                                match Map.tryFind Right subtrees with
-                                    | Some n -> n <! msg
-                                    | None ->
-                                        let n = spawn mailbox "Right" (binaryTreeNode e false)
-                                        let subtrees' = Map.add Right n subtrees
-                                        r <! OperationFinished id
-                                        return! normal elem removed subtrees'
+                            let name = match pos with | Left -> "Left" | Right -> "Right"
+                            let node = spawn mailbox name (binaryTreeNode e false)
+                            let subtrees' = Map.add pos node subtrees
+                            normal elem removed subtrees'
+                    match compare e elem with
+                    | res when res < 0 -> return! followSubtree Left
+                    | res when res > 0 -> return! followSubtree Right
+                    | _ -> r <! OperationFinished id; return! normal elem false subtrees
+
                 | Contains (r, id, e) ->
                     mailbox.Log.Value.Info("Contains {0}", e)
-                    if e = elem
-                        then r <! ContainsResult (id, not removed)
-                        else if e < elem
-                            then
-                                match Map.tryFind Left subtrees with
-                                    | Some n -> n <! msg
-                                    | None -> r <! ContainsResult (id, false)
-                            else
-                                match Map.tryFind Right subtrees with
-                                    | Some n -> n <! msg
-                                    | None -> r <! ContainsResult (id, false)
+                    let followSubtree pos =
+                        match Map.tryFind pos subtrees with
+                        | Some node -> node <! msg
+                        | None -> r <! ContainsResult (id, false)
+                    match compare e elem with
+                    | res when res < 0 -> followSubtree Left
+                    | res when res > 0 -> followSubtree Right
+                    | _ -> r <! ContainsResult (id, not removed)
+
                 | Remove (r, id, e) ->
                     mailbox.Log.Value.Info("Remove {0}", e)
-                    if e = elem
-                        then
-                            r <! OperationFinished id
-                            return! normal elem true subtrees
-                        else if e < elem
-                            then
-                                match Map.tryFind Left subtrees with
-                                    | Some n -> n <! msg
-                                    | None -> r <! OperationFinished id
-                            else
-                                match Map.tryFind Right subtrees with
-                                    | Some n -> n <! msg
-                                    | None -> r <! OperationFinished id
+                    let followSubtree pos =
+                        match Map.tryFind pos subtrees with
+                        | Some node -> node <! msg
+                        | None -> r <! OperationFinished id
+                    match compare e elem with
+                    | res when res < 0 -> followSubtree Left
+                    | res when res > 0 -> followSubtree Right
+                    | _ -> r <! OperationFinished id; return! normal elem true subtrees
+
             | :? InternalMessage as imsg ->
                 match imsg with
+
                 | CopyTo newRoot ->
                     mailbox.Log.Value.Info "CopyTo"
                     mailbox.Context.Parent <! CopyFinished
+
                 | _ -> mailbox.Log.Value.Info("Unexpected internal message: {0}", msg)
+
             | _ -> mailbox.Log.Value.Info("Unexpected message: {0}", msg)
             return! normal elem removed subtrees
         }
