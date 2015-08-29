@@ -59,8 +59,8 @@ type BinaryTreeSuiteFs () =
                 | 3 -> Remove (requester, id, randomElement ())
                 | _ -> Insert (requester, id, randomElement ())
             seq { 0..count-1 } |> Seq.map randomOperation 
-        let referenceReplies operations: seq<OperationReply> =
-            let mutable referenceSet: Set<int> = Set.empty
+        let referenceReplies operations =
+            let mutable referenceSet = Set.empty
             let replyFor op =
                 match op with
                 | Insert (_, id, elem) ->
