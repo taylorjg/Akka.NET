@@ -52,12 +52,12 @@ type BinaryTreeSuiteFs () =
     member this.BehaveIdenticallyToBuiltInSet_IncludesGc () =
         let rnd = new Random ()
         let randomOperations requester count =
-            let randomElement = rnd.Next 100
+            let randomElement () = rnd.Next 100
             let randomOperation id =
                 match rnd.Next 4 with
-                | 2 -> Contains (requester, id, randomElement)
-                | 3 -> Remove (requester, id, randomElement)
-                | _ -> Insert (requester, id, randomElement)
+                | 2 -> Contains (requester, id, randomElement ())
+                | 3 -> Remove (requester, id, randomElement ())
+                | _ -> Insert (requester, id, randomElement ())
             seq { 0..count-1 } |> Seq.map randomOperation 
         let referenceReplies operations: seq<OperationReply> =
             let mutable referenceSet: Set<int> = Set.empty
@@ -75,12 +75,12 @@ type BinaryTreeSuiteFs () =
 
         let probe = this.CreateTestProbe ()
         let topNode = spawn this.Sys "BinaryTreeSet" binaryTreeSet
-        let count = 10
+        let count = 1000
 
         let ops = randomOperations probe.Ref count |> Seq.toList
         let expectedReplies = referenceReplies ops |> Seq.toList
 
-        Seq.map (fun op -> topNode <! op) ops |> ignore
+        List.map (fun op -> topNode <! op) ops |> ignore
         this.CheckExpectedReplies probe ops expectedReplies
 
     member private this.Verify probe ops expectedReplies =
